@@ -1,0 +1,64 @@
+
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Products - EliteShop{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <div class="row">
+        <!-- FILTERS SIDEBAR -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-filter"></i> Filters</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Category Filter -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">Category</h6>
+                        <div class="list-group list-group-flush">
+                            <a href="{% url 'product_list' %}" class="list-group-item list-group-item-action">
+                                All Categories
+                            </a>
+                            {% for category in categories %}
+                            <a href="?category={{ category.id }}" class="list-group-item list-group-item-action">
+                                {{ category.name }}
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Sort Filter -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">Sort By</h6>
+                        <div class="btn-group w-100" role="group">
+                            <a href="?sort=-created_at" class="btn btn-sm btn-outline-primary">Newest</a>
+                            <a href="?sort=price" class="btn btn-sm btn-outline-primary">Low to High</a>
+                            <a href="?sort=-price" class="btn btn-sm btn-outline-primary">High to Low</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- PRODUCTS -->
+        <div class="col-md-9">
+            <div class="row g-4">
+                {% for product in products %}
+                <div class="col-md-6 col-lg-4">
+                    {% include 'partials/product_card.html' %}
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info text-center">
+                        <i class="fas fa-info-circle me-2"></i>No products found
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Orders - EliteShop{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="fw-bold mb-4">My Orders</h2>
+    
+    {% if orders %}
+    <div class="row">
+        {% for order in orders %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm hover-lift">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong>{{ order.order_number }}</strong>
+                        <span class="badge bg-primary">{{ order.get_status_display }}</span>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <p class="text-muted mb-2">
+                        <small>{{ order.created_at|date:"M d, Y" }}</small>
+                    </p>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Items: {{ order.items.count }}</p>
+                        <p class="fw-bold mb-0">Total: <span class="text-primary">${{ order.total_amount }}</span></p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Delivery</p>
+                        <p class="mb-0">{{ order.estimated_delivery|date:"M d, Y" }}</p>
+                    </div>
+                    
+                    <a href="{% url 'order_detail' order.id %}" class="btn btn-sm btn-primary w-100">
+                        <i class="fas fa-tracking me-1"></i>Track Order
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-box-open fa-5x text-muted mb-3"></i>
+        <h3>No orders yet</h3>
+        <p class="text-muted mb-4">Start shopping to place your first order</p>
+        <a href="{% url 'product_list' %}" class="btn btn-primary">
+            <i class="fas fa-shopping-bag me-2"></i>Shop Now
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,216 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Order {{ order.order_number }} - Tracking{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- ORDER INFO -->
+        <div class="col-md-8">
+            <h2 class="fw-bold mb-4">Order {{ order.order_number }}</h2>
+            
+            <!-- DELIVERY TIMELINE -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-map-marked-alt me-2"></i>Delivery Timeline
+                    </h5>
+                </div>
+                
+                <div class="card-body p-4">
+                    <!-- TIMELINE -->
+                    <div class="timeline">
+                        {% regroup order.tracking.status_updates.all by status as updates_by_status %}
+                        
+                        <div class="timeline-item {% if order.status == 'PLACED' %}active{% endif %}">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="fw-bold">Order Placed</h6>
+                                <p class="text-muted mb-0">{{ order.created_at|date:"M d, Y H:i" }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item {% if order.status in 'CONFIRMED,PACKED,SHIPPED,OUT_FOR_DELIVERY,DELIVERED' %}active{% endif %}">
+                            <div class="timeline-marker bg-info"></div>
+                            <div class="timeline-content">
+                                <h6 class="fw-bold">Order Confirmed</h6>
+                                <p class="text-muted mb-0">Processing your order</p>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item {% if order.status in 'PACKED,SHIPPED,OUT_FOR_DELIVERY,DELIVERED' %}active{% endif %}">
+                            <div class="timeline-marker bg-warning"></div>
+                            <div class="timeline-content">
+                                <h6 class="fw-bold">Packed</h6>
+                                <p class="text-muted mb-0">Preparing your items</p>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item {% if order.status in 'SHIPPED,OUT_FOR_DELIVERY,DELIVERED' %}active{% endif %}">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h6 class="fw-bold">Shipped</h6>
+                                <p class="text-muted mb-0">On the way to you</p>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item {% if order.status in 'OUT_FOR_DELIVERY,DELIVERED' %}active{% endif %}">
+                            <div class="timeline-marker bg-info"></div>
+                            <div class="timeline-content">
+                                <h6 class="fw-bold">Out for Delivery</h6>
+                                <p class="text-muted mb-0">Out for local delivery</p>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item {% if order.status == 'DELIVERED' %}active{% endif %}">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h6 class="fw-bold">Delivered</h6>
+                                <p class="text-muted mb-0">Successfully delivered</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ORDER ITEMS -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Order Items</h5>
+                </div>
+                
+                <div class="card-body">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Product</th>
+                                <th>Qty</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order_items %}
+                            <tr>
+                                <td>{{ item.product.name }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>${{ item.price }}</td>
+                                <td class="fw-bold">${{ item.total }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ORDER SUMMARY -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Order Details</h5>
+                </div>
+                
+                <div class="card-body">
+                    <div class="mb-3 pb-3 border-bottom">
+                        <p class="text-muted mb-1">Status</p>
+                        <p class="mb-0">
+                            <span class="badge bg-primary">{{ order.get_status_display }}</span>
+                        </p>
+                    </div>
+                    
+                    <div class="mb-3 pb-3 border-bottom">
+                        <p class="text-muted mb-1">Order Date</p>
+                        <p class="mb-0">{{ order.created_at|date:"M d, Y" }}</p>
+                    </div>
+                    
+                    <div class="mb-3 pb-3 border-bottom">
+                        <p class="text-muted mb-1">Estimated Delivery</p>
+                        <h5 class="fw-bold mb-0">{{ order.estimated_delivery|date:"M d, Y" }}</h5>
+                    </div>
+                    
+                    <div class="mb-3 pb-3 border-bottom">
+                        <p class="text-muted mb-1">Subtotal</p>
+                        <p class="mb-0">${{ order.total_amount }}</p>
+                    </div>
+                    
+                    {% if order.discount_amount %}
+                    <div class="mb-3 pb-3 border-bottom">
+                        <p class="text-muted mb-1">Discount</p>
+                        <p class="mb-0 text-success">-${{ order.discount_amount }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Total Amount</p>
+                        <h4 class="fw-bold text-primary mb-0">${{ order.total_amount }}</h4>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Delivery Address</p>
+                        <p class="small mb-0">
+                            {{ order.address.full_name }}<br>
+                            {{ order.address.street_address }}<br>
+                            {{ order.address.city }}, {{ order.address.state }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline-item {
+    display: flex;
+    margin-bottom: 30px;
+    position: relative;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 13px;
+    top: 40px;
+    height: 50px;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item:last-child::before {
+    display: none;
+}
+
+.timeline-item.active::before {
+    background: #667eea;
+}
+
+.timeline-marker {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 0 0 3px #e9ecef;
+    flex-shrink: 0;
+}
+
+.timeline-item.active .timeline-marker {
+    box-shadow: 0 0 0 3px #667eea;
+}
+
+.timeline-content {
+    flex-grow: 1;
+    margin-left: 20px;
+    padding-top: 5px;
+}
+</style>
+{% endblock %}

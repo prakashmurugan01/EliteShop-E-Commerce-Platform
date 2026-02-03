@@ -1,0 +1,200 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Checkout - EliteShop{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="fw-bold mb-4">Checkout</h2>
+    
+    <div class="row">
+        <!-- DELIVERY ADDRESS -->
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-map-marker-alt me-2"></i>Delivery Address
+                    </h5>
+                </div>
+                
+                <div class="card-body">
+                    {% if addresses %}
+                    <div class="row g-3">
+                        {% for address in addresses %}
+                        <div class="col-md-6">
+                            <div class="card address-card {% if address.is_default %}border-primary{% endif %} cursor-pointer" 
+                                 onclick="selectAddress('{{ address.id }}')">
+                                <div class="card-body">
+                                    <div class="form-check">
+                                        <input class="form-check-input address-radio" type="radio" name="address" 
+                                               value="{{ address.id }}" id="address{{ address.id }}"
+                                               {% if address.is_default %}checked{% endif %}>
+                                        <label class="form-check-label" for="address{{ address.id }}">
+                                            <strong>{{ address.full_name }}</strong>
+                                            <br>{{ address.street_address }}
+                                            <br>{{ address.city }}, {{ address.state }} {{ address.postal_code }}
+                                            <br>{{ address.phone }}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mt-3">
+                        <a href="{% url 'add_address' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-plus me-2"></i>Add New Address
+                        </a>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No address saved. Please add one.</p>
+                    <a href="{% url 'add_address' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Address
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- COUPON CODE -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tag me-2"></i>Coupon Code
+                    </h5>
+                </div>
+                
+                <div class="card-body">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="couponInput" placeholder="Enter coupon code">
+                        <button class="btn btn-info" id="applyCouponBtn">Apply</button>
+                    </div>
+                    <small class="text-muted">Enter valid coupon code to get discount</small>
+                    <div id="couponMessage" class="mt-2"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ORDER SUMMARY -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Order Summary</h5>
+                </div>
+                
+                <div class="card-body">
+                    <div class="mb-3" style="max-height: 300px; overflow-y: auto;">
+                        {% for item in cart_items %}
+                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                            <span>{{ item.product.name }} × {{ item.quantity }}</span>
+                            <span>${{ item.total_price }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal:</span>
+                        <span id="subtotal">${{ total_price }}</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Discount:</span>
+                        <span id="discount" class="text-success">-$0.00</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Shipping:</span>
+                        <span>$10.00</span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-4">
+                        <span class="fw-bold">Total:</span>
+                        <span class="h5 fw-bold text-primary" id="totalAmount">${{ total_price|add:"10" }}</span>
+                    </div>
+                    
+                    <form id="orderForm" method="POST" action="{% url 'place_order' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="address_id" id="addressIdInput">
+                        <input type="hidden" name="coupon_code" id="couponCodeInput">
+                        
+                        <button type="submit" class="btn btn-success btn-lg w-100">
+                            <i class="fas fa-check-circle me-2"></i>Place Order
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let appliedCoupon = null;
+
+function selectAddress(addressId) {
+    document.getElementById('addressIdInput').value = addressId;
+}
+
+document.getElementById('applyCouponBtn').addEventListener('click', function() {
+    const couponCode = document.getElementById('couponInput').value;
+    
+    if (!couponCode) {
+        Swal.fire('Error', 'Please enter coupon code', 'error');
+        return;
+    }
+    
+    fetch('{% url "apply_coupon" %}', {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCookie('csrftoken')},
+        body: new FormData(Object.assign(document.createElement('form'), {
+            'coupon_code': couponCode
+        }))
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            appliedCoupon = couponCode;
+            document.getElementById('couponCodeInput').value = couponCode;
+            document.getElementById('discount').textContent = `-$${data.discount.toFixed(2)}`;
+            document.getElementById('totalAmount').textContent = `$${data.final_total.toFixed(2)}`;
+            Swal.fire('Success!', 'Coupon applied', 'success');
+        } else {
+            Swal.fire('Error!', data.message, 'error');
+        }
+    });
+});
+
+document.getElementById('orderForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const addressId = document.getElementById('addressIdInput').value;
+    if (!addressId) {
+        Swal.fire('Error', 'Please select delivery address', 'error');
+        return;
+    }
+    
+    const formData = new FormData(this);
+    
+    fetch('{% url "place_order" %}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                title: 'Order Placed!',
+                text: 'Your order number: ' + data.order_number,
+                icon: 'success',
+            }).then(() => {
+                window.location.href = data.redirect_url;
+            });
+        }
+    });
+});
+</script>
+{% endblock %}
